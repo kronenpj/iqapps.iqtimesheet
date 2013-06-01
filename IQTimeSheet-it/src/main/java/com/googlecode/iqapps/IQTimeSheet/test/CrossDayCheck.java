@@ -39,7 +39,6 @@ import com.googlecode.iqapps.IQTimeSheet.TimeSheetDbAdapter;
 import com.googlecode.iqapps.TimeHelpers;
 import com.googlecode.iqapps.testtools.Helpers;
 import com.jayway.android.robotium.solo.Solo;
-import junit.framework.Assert;
 
 import java.util.ArrayList;
 
@@ -124,7 +123,7 @@ public class CrossDayCheck extends
         mInstr.sendKeyDownUpSync(KeyEvent.KEYCODE_MENU);
         int menuItemID = mActivity.getOptionsMenu()
                 .getItem(MenuItems.DAY_REPORT.ordinal()).getItemId();
-        Assert.assertTrue(mInstr.invokeMenuActionSync(mActivity, menuItemID, 0));
+        assertTrue(mInstr.invokeMenuActionSync(mActivity, menuItemID, 0));
         assertTrue(solo.waitForActivity("DayReport", 500));
         try {
             // mPositron.existsAt("#reportlist.0.text");
@@ -151,7 +150,7 @@ public class CrossDayCheck extends
         mInstr.sendKeyDownUpSync(KeyEvent.KEYCODE_MENU);
         int menuItemID = mActivity.getOptionsMenu()
                 .getItem(MenuItems.DAY_REPORT.ordinal()).getItemId();
-        Assert.assertTrue(mInstr.invokeMenuActionSync(mActivity, menuItemID, 0));
+        assertTrue(mInstr.invokeMenuActionSync(mActivity, menuItemID, 0));
         assertTrue(solo.waitForActivity("DayReport", 500));
         // assertEquals(Helpers.text1,
         // mPositron.stringAt("#reportlist.0.0.text"));
@@ -170,8 +169,11 @@ public class CrossDayCheck extends
             Log.e(TAG, e.toString());
         }
 
-        float appHours = Float.valueOf(appHourString.substring(0,
-                appHourString.indexOf(' ')));
+        float appHours = 0;
+        if (appHourString != null) {
+            appHours = Float.valueOf(appHourString.substring(0,
+                    appHourString.indexOf(' ')));
+        }
         assertTrue(solo.searchText(String.valueOf(hours)));
         float delta = hours - appHours;
         if (delta < 0)
