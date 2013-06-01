@@ -33,194 +33,196 @@ import com.googlecode.iqapps.TimeHelpers;
  * @author Paul Kronenwetter <kronenpj@gmail.com>
  */
 public class DayReport extends ListActivity {
-    private static final String TAG = "DayReport";
-    //private final int FOOTER_ID = -1;
-    private ListView reportList;
-    private TimeSheetDbAdapter db;
-    private Cursor timeEntryCursor;
-    private TextView footerView = null;
-    private long day = TimeHelpers.millisNow();
-    private float dayHours = -1;
+	private static final String TAG = "DayReport";
+	//private final int FOOTER_ID = -1;
+	private ListView reportList;
+	private TimeSheetDbAdapter db;
+	private TextView footerView = null;
+	private long day = TimeHelpers.millisNow();
+	private float dayHours = -1;
+	private Cursor timeEntryCursor;
 
-    /**
-     * Called when the activity is resumed or created.
-     */
-    @Override
-    public void onResume() {
-        super.onResume();
-        Log.d(TAG, "In onResume.");
+	/**
+	 * Called when the activity is resumed or created.
+	 */
+	@Override
+	public void onResume() {
+		super.onResume();
+		Log.d(TAG, "In onResume.");
 
-        // FIXME: This causes a FC when resuming from the home menu.
-        dayHours = TimeSheetActivity.prefs.getHoursPerDay();
+		// FIXME: This causes a FC when resuming from the home menu.
+		dayHours = TimeSheetActivity.prefs.getHoursPerDay();
 
-        try {
-            showReport();
-        } catch (RuntimeException e) {
-            Log.e(TAG, e.toString() + " calling showReport");
-        }
-        Log.d(TAG, "Back from showReport.");
-        setTitle("Day Report");
+		try {
+			showReport();
+		} catch (RuntimeException e) {
+			Log.e(TAG, e.toString() + " calling showReport");
+		}
+		Log.d(TAG, "Back from showReport.");
+		setTitle("Day Report");
 
-        db = new TimeSheetDbAdapter(this);
-        try {
-            setupDB();
-        } catch (Exception e) {
-            Log.e(TAG, "setupDB: " + e.toString());
-            finish();
-        }
-        Log.d(TAG, "Set up DB connection.");
+		db = new TimeSheetDbAdapter(this);
+		try {
+			setupDB();
+		} catch (Exception e) {
+			Log.e(TAG, "setupDB: " + e.toString());
+			finish();
+		}
+		Log.d(TAG, "Set up DB connection.");
 
-        try {
-            fillData();
-        } catch (Exception e) {
-            Log.e(TAG, "fillData: " + e.toString());
-            finish();
-        }
-        Log.d(TAG, "Back from fillData.");
-    }
+		try {
+			fillData();
+		} catch (Exception e) {
+			Log.e(TAG, "fillData: " + e.toString());
+			finish();
+		}
+		Log.d(TAG, "Back from fillData.");
+	}
 
-    /**
-     * Called when the activity destroyed.
-     */
-    @Override
-    public void onDestroy() {
-        try {
-            timeEntryCursor.close();
-        } catch (Exception e) {
-            Log.e(TAG, "onDestroy: " + e.toString());
-        }
-        db.close();
-        super.onDestroy();
-    }
+	/**
+	 * Called when the activity destroyed.
+	 */
+	@Override
+	public void onDestroy() {
+		try {
+			timeEntryCursor.close();
+		} catch (NullPointerException e) {
+			// Do nothing, this is expected sometimes.
+		}
 
-    /**
-     * Encapsulate what's needed to open the database and make sure something is
-     * in it.
-     */
-    private void setupDB() {
-        Log.d(TAG, "In setupDB.");
-        try {
-            db.open();
-        } catch (SQLException e) {
-            Log.e(TAG, e.toString());
-            finish();
-        }
-    }
+		try {
+			db.close();
+		} catch (Exception e) {
+			Log.e(TAG, "onDestroy: " + e.toString());
+		}
+		super.onDestroy();
+	}
 
-    private void fillData() {
-        Log.d(TAG, "In fillData.");
+	/**
+	 * Encapsulate what's needed to open the database and make sure something is
+	 * in it.
+	 */
+	private void setupDB() {
+		Log.d(TAG, "In setupDB.");
+		try {
+			db.open();
+		} catch (SQLException e) {
+			Log.e(TAG, e.toString());
+			finish();
+		}
+	}
 
-        // Cheat a little on the date. This was originally referencing timeIn
-        // from the cursor below.
-        String date = TimeHelpers.millisToDate(day);
-        setTitle("Day Report - " + date);
+	private void fillData() {
+		Log.d(TAG, "In fillData.");
 
-        footerView
-                .setText("Hours worked this day: 0\nHours remaining this day: "
-                        + String.format("%.2f", dayHours));
+		// Cheat a little on the date. This was originally referencing timeIn
+		// from the cursor below.
+		String date = TimeHelpers.millisToDate(day);
+		setTitle("Day Report - " + date);
 
-        try {
-            timeEntryCursor.close();
-        } catch (NullPointerException e) {
-            // Do nothing, this is expected sometimes.
-        } catch (Exception e) {
-            Log.e(TAG, "timeEntryCursor.close: " + e.toString());
-            return;
-        }
+		footerView
+				.setText("Hours worked this day: 0\nHours remaining this day: "
+						+ String.format("%.2f", dayHours));
 
-        // If the day being reported is the current week, most probably where
-        // the current open task exists, then include it, otherwise omit.
-        if (day >= TimeHelpers.millisToStartOfDay(TimeHelpers.millisNow())
-                && day <= TimeHelpers.millisToEndOfDay(TimeHelpers.millisNow())) {
-            timeEntryCursor = db.daySummary(day, false);
-        } else {
-            timeEntryCursor = db.daySummary(day, true);
-        }
-        // startManagingCursor(timeEntryCursor);
+		// If the day being reported is the current week, most probably where
+		// the current open task exists, then include it, otherwise omit.
 
-        try {
-            timeEntryCursor.moveToFirst();
-        } catch (NullPointerException e) {
-            Log.e(TAG, "timeEntryCursor.moveToFirst: " + e.toString());
-            return;
-        } catch (Exception e) {
-            Log.e(TAG, "timeEntryCursor.moveToFirst: " + e.toString());
-            return;
-        }
+		try {
+			timeEntryCursor.close();
+		} catch (NullPointerException e) {
+			// Do nothing, this is expected sometimes.
+		}
 
-        float accum = 0;
-        while (!timeEntryCursor.isAfterLast()) {
-            accum = accum
-                    + timeEntryCursor.getFloat(timeEntryCursor
-                    .getColumnIndex(TimeSheetDbAdapter.KEY_TOTAL));
-            timeEntryCursor.moveToNext();
-        }
+		if (day >= TimeHelpers.millisToStartOfDay(TimeHelpers.millisNow())
+				&& day <= TimeHelpers.millisToEndOfDay(TimeHelpers.millisNow())) {
+			timeEntryCursor = db.daySummary(day, false);
+		} else {
+			timeEntryCursor = db.daySummary(day, true);
+		}
 
-        footerView.setText("Hours worked this day: "
-                + String.format("%.2f", accum) + "\nHours remaining this day: "
-                + String.format("%.2f", dayHours - accum));
+		try {
+			timeEntryCursor.moveToFirst();
+		} catch (NullPointerException e) {
+			Log.e(TAG, "timeEntryCursor.moveToFirst: " + e.toString());
+			return;
+		} catch (Exception e) {
+			Log.e(TAG, "timeEntryCursor.moveToFirst: " + e.toString());
+			return;
+		}
 
-        try {
-            reportList.setAdapter(new ReportCursorAdapter(this,
-                    R.layout.mysimple_list_item_2, timeEntryCursor,
-                    new String[]{TimeSheetDbAdapter.KEY_TASK,
-                            TimeSheetDbAdapter.KEY_TOTAL}, new int[]{
-                    android.R.id.text1, android.R.id.text2}));
-        } catch (Exception e) {
-            Log.e(TAG, "reportList.setAdapter: " + e.toString());
-            finish();
-        }
-    }
+		float accum = 0;
+		while (!timeEntryCursor.isAfterLast()) {
+			accum = accum
+					+ timeEntryCursor.getFloat(timeEntryCursor
+					.getColumnIndex(TimeSheetDbAdapter.KEY_TOTAL));
+			timeEntryCursor.moveToNext();
+		}
 
-    protected void showReport() {
-        Log.d(TAG, "Changing to report layout.");
+		footerView.setText("Hours worked this day: "
+				+ String.format("%.2f", accum) + "\nHours remaining this day: "
+				+ String.format("%.2f", dayHours - accum));
 
-        try {
-            setContentView(R.layout.report);
-        } catch (Exception e) {
-            Log.e(TAG, "Caught " + e.toString()
-                    + " while calling setContentView(R.layout.report)");
-        }
+		try {
+			reportList.setAdapter(new ReportCursorAdapter(this,
+					R.layout.mysimple_list_item_2, timeEntryCursor,
+					new String[]{TimeSheetDbAdapter.KEY_TASK,
+							TimeSheetDbAdapter.KEY_TOTAL}, new int[]{
+					android.R.id.text1, android.R.id.text2}));
+		} catch (Exception e) {
+			Log.e(TAG, "reportList.setAdapter: " + e.toString());
+			finish();
+		}
+	}
 
-        // reportList = (ListView) findViewById(R.id.reportlist);
-        reportList = (ListView) findViewById(android.R.id.list);
-        footerView = (TextView) findViewById(R.id.reportfooter);
-        footerView.setTextSize(TimeSheetActivity.prefs
-                .getTotalsFontSize());
+	protected void showReport() {
+		Log.d(TAG, "Changing to report layout.");
 
-        Button[] child = new Button[]{(Button) findViewById(R.id.previous),
-                (Button) findViewById(R.id.today),
-                (Button) findViewById(R.id.next)};
+		try {
+			setContentView(R.layout.report);
+		} catch (Exception e) {
+			Log.e(TAG, "Caught " + e.toString()
+					+ " while calling setContentView(R.layout.report)");
+		}
 
-        for (Button aChild : child) {
-            try {
-                aChild.setOnClickListener(mButtonListener);
-            } catch (NullPointerException e) {
-                Log.e(TAG, "setOnClickListener: " + e.toString());
-            }
-        }
-    }
+		// reportList = (ListView) findViewById(R.id.reportlist);
+		reportList = (ListView) findViewById(android.R.id.list);
+		footerView = (TextView) findViewById(R.id.reportfooter);
+		footerView.setTextSize(TimeSheetActivity.prefs
+				.getTotalsFontSize());
 
-    /**
-     * This method is what is registered with the button to cause an action to
-     * occur when it is pressed.
-     */
-    private OnClickListener mButtonListener = new OnClickListener() {
-        public void onClick(View v) {
-            Log.d(TAG, "onClickListener view id: " + v.getId());
+		Button[] child = new Button[]{(Button) findViewById(R.id.previous),
+				(Button) findViewById(R.id.today),
+				(Button) findViewById(R.id.next)};
 
-            switch (v.getId()) {
-                case R.id.previous:
-                    day = TimeHelpers.millisToStartOfDay(day) - 1000;
-                    break;
-                case R.id.today:
-                    day = TimeHelpers.millisNow();
-                    break;
-                case R.id.next:
-                    day = TimeHelpers.millisToEndOfDay(day) + 1000;
-                    break;
-            }
-            fillData();
-        }
-    };
+		for (Button aChild : child) {
+			try {
+				aChild.setOnClickListener(mButtonListener);
+			} catch (NullPointerException e) {
+				Log.e(TAG, "setOnClickListener: " + e.toString());
+			}
+		}
+	}
+
+	/**
+	 * This method is what is registered with the button to cause an action to
+	 * occur when it is pressed.
+	 */
+	private OnClickListener mButtonListener = new OnClickListener() {
+		public void onClick(View v) {
+			Log.d(TAG, "onClickListener view id: " + v.getId());
+
+			switch (v.getId()) {
+				case R.id.previous:
+					day = TimeHelpers.millisToStartOfDay(day) - 1000;
+					break;
+				case R.id.today:
+					day = TimeHelpers.millisNow();
+					break;
+				case R.id.next:
+					day = TimeHelpers.millisToEndOfDay(day) + 1000;
+					break;
+			}
+			fillData();
+		}
+	};
 }

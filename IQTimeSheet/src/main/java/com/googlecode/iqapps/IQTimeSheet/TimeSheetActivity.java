@@ -56,8 +56,6 @@ public class TimeSheetActivity extends ListActivity {
     // private TextView taskListItem;
     // private TimeListWrapper timeWrapper;
     // private TimeListAdapter timeAdapter;
-    private Cursor taskCursor;
-    private Cursor reportCursor;
     private String applicationName;
     private String myPackage;
     static NotificationManager notificationManager;
@@ -163,16 +161,12 @@ public class TimeSheetActivity extends ListActivity {
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
 
-        try {
-            taskCursor.close();
-        } catch (Exception e) {
-            Log.i(TAG, "onDestroy: (taskCursor) " + e.toString());
-        }
-        try {
-            reportCursor.close();
-        } catch (Exception e) {
-            Log.i(TAG, "onDestroy: (reportCursor) " + e.toString());
-        }
+//        try {
+//            taskCursor.close();
+//        } catch (Exception e) {
+//            Log.i(TAG, "onDestroy: (taskCursor) " + e.toString());
+//        }
+
         try {
             db.close();
         } catch (Exception e) {
@@ -291,21 +285,22 @@ public class TimeSheetActivity extends ListActivity {
         }
     }
 
-    void reloadTaskCursor() {
-        try {
-            taskCursor.close();
-        } catch (Exception e) {
-            Log.i(TAG, "reloadTaskCursor " + e.toString());
-        }
-        taskCursor = db.fetchAllTaskEntries();
-    }
+//    void reloadTaskCursor() {
+//        try {
+//            taskCursor.close();
+//        } catch (Exception e) {
+//            Log.i(TAG, "reloadTaskCursor " + e.toString());
+//        }
+//        taskCursor = db.fetchAllTaskEntries();
+//    }
 
     String getTaskFromLocation(long position) {
         Log.d(TAG, "getTaskFromLocation");
 
-        taskCursor.moveToPosition((int) position);
-        if (!taskCursor.isAfterLast()) {
-            return taskCursor.getString(taskCursor
+        Cursor myTaskCursor = db.fetchAllTaskEntries();
+        myTaskCursor.moveToPosition((int) position);
+        if (!myTaskCursor.isAfterLast()) {
+            return myTaskCursor.getString(myTaskCursor
                     .getColumnIndex(TimeSheetDbAdapter.KEY_TASK));
         }
         return null;
@@ -314,15 +309,14 @@ public class TimeSheetActivity extends ListActivity {
     void fillData() {
         Log.d(TAG, "fillData");
         // Get all of the entries from the database and create the list
-        reloadTaskCursor();
-        startManagingCursor(taskCursor);
+        Cursor myTaskCursor = db.fetchAllTaskEntries();
 
-        String[] items = new String[taskCursor.getCount()];
-        taskCursor.moveToFirst();
+        String[] items = new String[myTaskCursor.getCount()];
+        myTaskCursor.moveToFirst();
         int i = 0;
-        while (!taskCursor.isAfterLast()) {
-            items[i] = taskCursor.getString(1);
-            taskCursor.moveToNext();
+        while (!myTaskCursor.isAfterLast()) {
+            items[i] = myTaskCursor.getString(1);
+            myTaskCursor.moveToNext();
             i++;
         }
 
@@ -335,7 +329,7 @@ public class TimeSheetActivity extends ListActivity {
         Log.d(TAG, "updateTitleBar");
         float hoursPerDay = prefs.getHoursPerDay();
         // Display the time accumulated for today with time remaining.
-        reportCursor = db.daySummary(false);
+        Cursor reportCursor = db.daySummary(false);
         if (reportCursor == null) {
             setTitle(applicationName + " "
                     + String.format("(%.2fh / %.2fh)", 0.0, hoursPerDay));
@@ -445,8 +439,6 @@ public class TimeSheetActivity extends ListActivity {
             Log.d(TAG, "Closing entry.  delta = " + delta / 86400000.0 + " days.");
             Log.d(TAG, "With timeOut = " + boundary);
             db.closeEntry(lastTaskID, boundary);
-            reloadTaskCursor();
-            //taskCursor.requery();
         } else if (delta > 0) { // Now is beyond the boundary.
             Log.d(TAG, "Opening dialog.  delta = " + delta);
             db.closeEntry(lastTaskID, boundary);
@@ -496,18 +488,23 @@ public class TimeSheetActivity extends ListActivity {
         tasksList.clearChoices();
         // Iterate over the entire cursor to find the name of the
         // entry that is to be selected.
-        if (taskCursor == null) reloadTaskCursor();
-        taskCursor.moveToFirst();
-        while (!taskCursor.isAfterLast()) {
-            Log.d(TAG, "Checking item at " + taskCursor.getPosition());
-            Log.d(TAG, " Item is " + taskCursor.getLong(0));
-            if (taskCursor.getLong(0) == lastTaskID) {
-                Log.d(TAG, "  Selecting item at " + taskCursor.getPosition());
-                tasksList.setItemChecked(taskCursor.getPosition(), true);
-                tasksList.setSelection(taskCursor.getPosition());
+        Cursor myTaskCursor = db.fetchAllTaskEntries();
+        myTaskCursor.moveToFirst();
+        while (!myTaskCursor.isAfterLast()) {
+            Log.d(TAG, "Checking item at " + myTaskCursor.getPosition());
+            Log.d(TAG, " Item is " + myTaskCursor.getLong(0));
+            if (myTaskCursor.getLong(0) == lastTaskID) {
+                Log.d(TAG, "  Selecting item at " + myTaskCursor.getPosition());
+                tasksList.setItemChecked(myTaskCursor.getPosition(), true);
+                tasksList.setSelection(myTaskCursor.getPosition());
                 return;
             }
-            taskCursor.moveToNext();
+            myTaskCursor.moveToNext();
+        }
+        try {
+            myTaskCursor.close();
+        } catch (IllegalStateException e) {
+            // Do nothing.
         }
     }
 
@@ -791,18 +788,18 @@ public class TimeSheetActivity extends ListActivity {
         }
         if (item.getItemId() == MenuItems.SCRUB_DB.ordinal()) {
             long lastDBentry = db.lastTaskEntry();
-            //Cursor taskCursor = db.fetchAllTimeEntries();
-            reloadTaskCursor();
-            taskCursor.moveToFirst();
+
+            Cursor myTaskCursor = db.fetchAllTaskEntries();
+            myTaskCursor.moveToFirst();
             int count = 0;
-            while (!taskCursor.isAfterLast()) {
-                long timeOut = taskCursor.getLong(taskCursor
+            while (!myTaskCursor.isAfterLast()) {
+                long timeOut = myTaskCursor.getLong(myTaskCursor
                         .getColumnIndex(TimeSheetDbAdapter.KEY_TIMEOUT));
-                long timeIn = taskCursor.getLong(taskCursor
+                long timeIn = myTaskCursor.getLong(myTaskCursor
                         .getColumnIndex(TimeSheetDbAdapter.KEY_TIMEIN));
                 long boundary = TimeHelpers.millisToEoDBoundary(timeIn, prefs.getTimeZone()) - 1000;
 
-                long thisRowID = taskCursor.getPosition();
+                long thisRowID = myTaskCursor.getPosition();
                 // Want to know whether the last entry follows: timeIn < boundary < timeOut
                 // TODO: Should this be something more interactive?
                 if (timeOut > 0) {
@@ -824,7 +821,7 @@ public class TimeSheetActivity extends ListActivity {
                     db.updateEntry(thisRowID, -1, null, timeIn, boundary);
                     count++;
                 }
-                taskCursor.moveToNext();
+                myTaskCursor.moveToNext();
             }
             Toast.makeText(this, "ScrubDB: Fixed " + count + " entries.", Toast.LENGTH_LONG).show();
             return true;

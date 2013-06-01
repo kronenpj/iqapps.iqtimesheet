@@ -48,7 +48,6 @@ public class EditTaskHandler extends Activity {
     private SeekBar percentSlider;
     private TextView percentSymbol;
     private TimeSheetDbAdapter db;
-    private Cursor parents;
     int oldSplitState = 0;
     long oldParent;
     int oldPercentage = 100;
@@ -80,8 +79,8 @@ public class EditTaskHandler extends Activity {
 
         showTaskEdit();
 
-        parents = db.fetchParentTasks();
-        startManagingCursor(parents);
+        Cursor parents = db.fetchParentTasks();
+
         items = new String[parents.getCount()];
         parents.moveToFirst();
         int i = 0;
@@ -89,6 +88,12 @@ public class EditTaskHandler extends Activity {
             items[i] = parents.getString(1);
             parents.moveToNext();
             i++;
+        }
+
+        try {
+            parents.close();
+        } catch (SQLException e) {
+            // Do nothing.  This is expected sometimes.
         }
 
         taskSpinner.setAdapter(new ArrayAdapter<String>(this,
@@ -215,11 +220,6 @@ public class EditTaskHandler extends Activity {
      * Attempts to close both the cursor and the database connection.
      */
     private void closeCursorDB() {
-        try {
-            parents.close();
-        } catch (SQLException e) {
-            Log.i(TAG, "Cursor close: " + e.toString());
-        }
         try {
             db.close();
         } catch (SQLException e) {

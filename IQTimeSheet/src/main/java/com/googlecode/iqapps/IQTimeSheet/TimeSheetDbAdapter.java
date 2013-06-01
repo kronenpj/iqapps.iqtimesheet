@@ -406,6 +406,12 @@ public class TimeSheetDbAdapter {
         taskCursor.moveToFirst();
         long timeIn = taskCursor.getLong(taskCursor
                 .getColumnIndex(TimeSheetDbAdapter.KEY_TIMEIN));
+        try {
+            taskCursor.close();
+        } catch (IllegalStateException e) {
+            // Do nothing.
+        }
+
         // TODO: Need a boolean preference to enable / disable this...
         long boundary = TimeHelpers.millisToEoDBoundary(timeIn, TimeSheetActivity.prefs.getTimeZone());
         if (timeOut > boundary) timeOut = boundary - 1000;

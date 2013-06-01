@@ -45,7 +45,6 @@ public class AddTaskHandler extends Activity {
     private TextView percentSymbol;
     private SeekBar percentSlider;
     private TimeSheetDbAdapter db;
-    private Cursor parents;
 
     /** Called when the activity is first created. */
     // @Override
@@ -71,8 +70,8 @@ public class AddTaskHandler extends Activity {
             finish();
         }
 
-        parents = db.fetchParentTasks();
-        startManagingCursor(parents);
+        Cursor parents = db.fetchParentTasks();
+
         String[] items = new String[parents.getCount()];
         parents.moveToFirst();
         int i = 0;
@@ -80,6 +79,11 @@ public class AddTaskHandler extends Activity {
             items[i] = parents.getString(1);
             parents.moveToNext();
             i++;
+        }
+        try {
+            parents.close();
+        } catch (SQLException e) {
+            // Do nothing.  This is expected sometimes.
         }
 
         taskSpinner.setAdapter(new ArrayAdapter<String>(this,
@@ -125,13 +129,6 @@ public class AddTaskHandler extends Activity {
      */
     private void closeCursorDB() {
         Log.i(TAG, "Entering closeCursorDB");
-        try {
-            parents.close();
-        } catch (SQLException e) {
-            Log.i(TAG, "Cursor close: " + e.toString());
-        }
-
-        Log.i(TAG, "Closing db connection");
         try {
             db.close();
         } catch (SQLException e) {

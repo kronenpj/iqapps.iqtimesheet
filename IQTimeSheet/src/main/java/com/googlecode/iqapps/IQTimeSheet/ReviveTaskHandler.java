@@ -40,8 +40,6 @@ public class ReviveTaskHandler extends ListActivity {
     private TimeSheetDbAdapter db;
     private ListView tasksList;
 
-    private Cursor taskCursor;
-
     /**
      * Called when the activity is first created.
      */
@@ -104,17 +102,12 @@ public class ReviveTaskHandler extends ListActivity {
     @Override
     public void onDestroy() {
         try {
-            taskCursor.close();
+            db.close();
         } catch (Exception e) {
             Log.e(TAG, "onDestroy: " + e.toString());
         }
 
-        db.close();
         super.onDestroy();
-    }
-
-    private void reloadTaskCursor() {
-        taskCursor = db.fetchAllDisabledTasks();
     }
 
     private void reactivateTask(String taskName) {
@@ -124,8 +117,7 @@ public class ReviveTaskHandler extends ListActivity {
 
     private void fillData() {
         // Get all of the entries from the database and create the list
-        reloadTaskCursor();
-        startManagingCursor(taskCursor);
+        Cursor taskCursor = db.fetchAllDisabledTasks();
 
         String[] items = new String[taskCursor.getCount()];
         taskCursor.moveToFirst();
@@ -138,5 +130,10 @@ public class ReviveTaskHandler extends ListActivity {
 
         tasksList.setAdapter(new ArrayAdapter<String>(this,
                 android.R.layout.simple_list_item_single_choice, items));
+        try {
+            taskCursor.close();
+        } catch (SQLException e) {
+            // Do nothing.  This is expected sometimes.
+        }
     }
 }
