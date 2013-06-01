@@ -247,6 +247,7 @@ public class TimeSheetActivity extends ListActivity {
                 .setWhen(timeIn)
                 .setContentIntent(contentIntent)
                 .setAutoCancel(false)
+                .setOngoing(true)
                 .setSmallIcon(R.drawable.icon_small)
                 .build();
 
