@@ -27,7 +27,7 @@
 		note that this uses default scope (NOT provided) since the library will need to be added to your apk -->
 			<groupId>android.support</groupId>
 			<artifactId>compatibility-v4</artifactId>
-			<version>13</version>
+			<version>r13</version>
 		</dependency>
 	</dependencies>
 	<build>
